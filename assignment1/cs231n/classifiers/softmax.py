@@ -29,7 +29,33 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+
+  # compute the loss and the gradient
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  for i in range(num_train):
+    scores = X[i].dot(W)
+    # Fix for numerical stability by subtracting max from score vector.
+    shifted_scores = scores - np.max(scores)
+    # Calculate loss
+    exp_shifted_scores = np.exp(shifted_scores)
+    sum_exp_shifted_scores = np.sum(exp_shifted_scores, dtype=np.float64)
+    loss += -shifted_scores[y[i]] + np.log(sum_exp_shifted_scores)
+    # Calculate gradient
+    dW[:, y[i]] -= X[i]
+    inv_sum = 1 / sum_exp_shifted_scores
+    for j in range(num_classes):
+      dW[:, j] += inv_sum*exp_shifted_scores[j]*X[i]
+
+  # Right now the loss is a sum over all training examples, but we want it
+  # to be an average instead so we divide by num_train.
+  loss /= num_train
+  dW /= num_train
+
+  # Add regularization to the loss.
+  loss += reg * np.sum(W * W)
+  dW += reg * 2 * W
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -53,7 +79,22 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  # Compute the loss and the gradient
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  scores = X.dot(W)
+  # Calculate loss
+  shifted_scores = scores - np.max(scores, axis=1)[:, np.newaxis]
+  exp_shifted_scores = np.exp(shifted_scores)
+  sum_exp_shifted_scores = np.sum(exp_shifted_scores, dtype=np.float64, axis=1)
+  loss = np.mean(-shifted_scores[range(num_train), y] + np.log(sum_exp_shifted_scores))
+  loss += reg * np.sum(W * W)
+  # Calculate gradient
+  inv_sum = 1 / sum_exp_shifted_scores
+  coefficients = inv_sum[:,np.newaxis]*exp_shifted_scores
+  coefficients[range(num_train), y] -= 1
+  dW = X.T.dot(coefficients) / num_train
+  dW += reg * 2 * W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
