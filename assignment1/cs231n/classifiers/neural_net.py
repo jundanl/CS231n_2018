@@ -40,6 +40,9 @@ class TwoLayerNet(object):
     self.params['W2'] = std * np.random.randn(hidden_size, output_size)
     self.params['b2'] = np.zeros(output_size)
 
+    self.hyperparams = {}
+    self.hyperparams['hidden_size'] = hidden_size
+
   def loss(self, X, y=None, reg=0.0):
     """
     Compute the loss and gradients for a two layer fully connected neural
@@ -155,7 +158,8 @@ class TwoLayerNet(object):
     - verbose: boolean; if true print progress during optimization.
     """
     num_train = X.shape[0]
-    iterations_per_epoch = max(num_train / batch_size, 1)
+    iterations_per_epoch = int(max(num_train / batch_size, 1))
+    _learning_rate = learning_rate
 
     # Use SGD to optimize the parameters in self.model
     loss_history = []
@@ -180,7 +184,6 @@ class TwoLayerNet(object):
       # Compute loss and gradients using the current minibatch
       loss, grads = self.loss(X_batch, y=y_batch, reg=reg)
       loss_history.append(loss)
-
       #########################################################################
       # TODO: Use the gradients in the grads dictionary to update the         #
       # parameters of the network (stored in the dictionary self.params)      #
@@ -199,20 +202,28 @@ class TwoLayerNet(object):
         print('iteration %d / %d: loss %f' % (it, num_iters, loss))
 
       # Every epoch, check train and val accuracy and decay learning rate.
-      if it % iterations_per_epoch == 0:
+      if (it % iterations_per_epoch == 0) or (it + 1 == num_iters):
         # Check accuracy
         train_acc = (self.predict(X_batch) == y_batch).mean()
         val_acc = (self.predict(X_val) == y_val).mean()
         train_acc_history.append(train_acc)
         val_acc_history.append(val_acc)
-
         # Decay learning rate
         learning_rate *= learning_rate_decay
+
+    val_loss = self.loss(X_val, y_val, reg=reg)
 
     return {
       'loss_history': loss_history,
       'train_acc_history': train_acc_history,
       'val_acc_history': val_acc_history,
+      'val_loss': val_loss,
+      'params': {
+            'hidden_size': self.hyperparams['hidden_size'],
+            'learning_rate': _learning_rate, 'learning_rate_decay': learning_rate_decay,
+            'reg': reg, 'num_iters': num_iters,
+            'batch_size': batch_size
+      },
     }
 
   def predict(self, X):
