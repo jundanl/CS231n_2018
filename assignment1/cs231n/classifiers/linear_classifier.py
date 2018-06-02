@@ -9,7 +9,7 @@ class LinearClassifier(object):
   def __init__(self):
     self.W = None
 
-  def train(self, X, y, learning_rate=1e-3, reg=1e-5, num_iters=100,
+  def train(self, X, y, learning_rate=1e-3, learning_rate_decay=0.95, reg=1e-5, num_iters=100,
             batch_size=200, verbose=False):
     """
     Train this linear classifier using stochastic gradient descent.
@@ -30,6 +30,7 @@ class LinearClassifier(object):
     """
     num_train, dim = X.shape
     num_classes = np.max(y) + 1 # assume y takes values 0...K-1 where K is number of classes
+    iterations_per_epoch = int(max(num_train / batch_size, 1))
     if self.W is None:
       # lazily initialize W
       self.W = 0.001 * np.random.randn(dim, num_classes)
@@ -74,6 +75,10 @@ class LinearClassifier(object):
 
       if verbose and it % 100 == 0:
         print('iteration %d / %d: loss %f' % (it, num_iters, loss))
+
+      # learning_rate decay
+      if it % iterations_per_epoch == 0:
+        learning_rate *= learning_rate_decay
 
     return loss_history
 
